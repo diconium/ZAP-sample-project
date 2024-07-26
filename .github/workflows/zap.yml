@@ -1,27 +1,27 @@
-# .github/workflows/zap.yml
-name: Run ZAP Scan
+name: Run ZAP Proxy
 
-on: [push, pull_request]
+on:
+  workflow_dispatch: # Allows manual triggering
+  push:
+    branches:
+      - main
 
 jobs:
-  zap-scan:
+  run-zap:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Check out the repository
+        uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Build ZAP Docker image
+        run: docker build -t zap-custom .
 
-      - name: Build ZAP Docker Image
-        run: docker build -t custom-zap .
+      - name: Run ZAP container
+        run: docker run -d -p 9090:9090 --name zap-container zap-custom
 
-      - name: Run ZAP Proxy
-        run: docker run --rm -p 9090:9090 custom-zap
+      - name: Wait for ZAP to initialize
+        run: sleep 60 # Adjust this sleep time based on how long ZAP takes to start
 
-      - name: Run Tests
-        run: |
-          # Here you can add commands to interact with the ZAP API or run specific tests
-          # This is just a placeholder for your actual test commands
-          echo "ZAP Proxy should be running now !!! "
+      - name: Fetch ZAP logs
+        run: docker logs zap-container
